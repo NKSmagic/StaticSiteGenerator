@@ -1,2 +1,2 @@
-# StaticSideGenerator
+# StaticSiteGenerator
 
