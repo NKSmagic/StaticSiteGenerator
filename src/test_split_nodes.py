@@ -1,7 +1,9 @@
 import unittest
 from textnode import TextNode, TextType
 from split_nodes import (
-    split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes
+    split_nodes_delimiter, extract_markdown_images, extract_markdown_links, 
+    split_nodes_image, split_nodes_link, text_to_textnodes, markdown_to_blocks,
+    block_to_block_type, BlockType
 )
 
 class TestSplitNodes(unittest.TestCase):
@@ -191,3 +193,99 @@ class TestSplitNodes(unittest.TestCase):
             ],
             nodes,
         )
+    def test_markdown_to_blocks(self):
+        md = """
+This is **bolded** paragraph
+
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+- This is a list
+- with items
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+    def test_mardown_to_blocks_2(self):
+        md = """
+This is a _italic_ paragraph
+
+Here starts another paragraph with **bold** text and some piece of 'code'
+Here is another line to the same paragraph
+And yet another
+
+- This starts a list
+- Look! A second Item!
+- And another Item
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is a _italic_ paragraph", 
+                "Here starts another paragraph with **bold** text and some piece of 'code'\nHere is another line to the same paragraph\nAnd yet another",
+                "- This starts a list\n- Look! A second Item!\n- And another Item"
+            ]
+        )
+    
+    def test_block_to_block_type(self):
+        # Test headings
+        assert block_to_block_type("# Heading 1") == BlockType.HEADING
+        assert block_to_block_type("## Heading 2") == BlockType.HEADING
+
+        # Test code blocks
+        assert block_to_block_type("```\nsome code\n```") == BlockType.CODE
+    
+        # Test quote blocks
+        assert block_to_block_type("> This is a quote") == BlockType.QUOTE
+        assert block_to_block_type("> Line 1\n> Line 2") == BlockType.QUOTE
+
+        # Test Unordered List
+        assert block_to_block_type("- This is a list\n- A second item") == BlockType.UNORDERED_LIST
+        assert block_to_block_type("- One-line list") == BlockType.UNORDERED_LIST
+
+        # Test Orderes List
+        assert block_to_block_type("1. This is a ordered list\n2. A second item") == BlockType.ORDERED_LIST
+
+        # Test Paragraph
+        assert block_to_block_type("This is a paragraph") == BlockType.PARAGRAPH
+
+        # Test Empty
+        assert block_to_block_type("") == BlockType.PARAGRAPH
+
+        # More heading tests
+        assert block_to_block_type("### Heading 3") == BlockType.HEADING
+        assert block_to_block_type("###### Heading 6") == BlockType.HEADING
+        assert block_to_block_type("####### Not a valid heading") == BlockType.PARAGRAPH  # More than 6 # characters
+
+        # More code block tests
+        assert block_to_block_type("```python\ndef hello():\n    print('Hello')\n```") == BlockType.CODE
+        assert block_to_block_type("```\n```") == BlockType.CODE  # Empty code block
+
+        # Edge cases for quotes
+        assert block_to_block_type("> Line 1\n> Line 2\n> Line 3") == BlockType.QUOTE
+        assert block_to_block_type(">No space after > character") == BlockType.PARAGRAPH  # Missing space after >
+
+        # More unordered list tests
+        assert block_to_block_type("- Item") == BlockType.UNORDERED_LIST  # Single item
+        assert block_to_block_type("- Item 1\n- Item 2\n- Item 3") == BlockType.UNORDERED_LIST
+        assert block_to_block_type("-Not a list") == BlockType.PARAGRAPH  # Missing space after -
+
+        # More ordered list tests
+        assert block_to_block_type("1. Item") == BlockType.ORDERED_LIST  # Single item
+        assert block_to_block_type("1. Item 1\n2. Item 2\n3. Item 3") == BlockType.ORDERED_LIST
+        assert block_to_block_type("1. Item 1\n3. Item 3") == BlockType.PARAGRAPH  # Missing item 2
+        assert block_to_block_type("2. Starting with 2") == BlockType.PARAGRAPH  # Not starting with 1
+
+        # Mixed content tests
+        assert block_to_block_type("This is text\nWith multiple lines") == BlockType.PARAGRAPH
+        assert block_to_block_type("This has a # in the middle") == BlockType.PARAGRAPH
+        assert block_to_block_type("This has\n> a quote line\nbut isn't entirely a quote") == BlockType.PARAGRAPH
+    
+        

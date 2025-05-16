@@ -1,6 +1,9 @@
 import re
+from enum import Enum
 
 from textnode import TextNode, TextType
+
+BlockType = Enum("BlockType", ["PARAGRAPH", "HEADING", "CODE", "QUOTE", "UNORDERED_LIST", "ORDERED_LIST"])
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
     result = list()
@@ -130,3 +133,41 @@ def text_to_textnodes(text):
             italic_passed.append(node)
     return italic_passed
     
+def markdown_to_blocks(markdown):
+    result = []
+    split_text = markdown.split("\n\n")
+    for item in split_text:
+        if item.strip() != "":
+            result.append(item.strip())
+    return result
+
+def is_ordered_list(block):
+    lines = block.split("\n")
+    for i, line in enumerate(lines):
+        expected_prefix = f"{i+1}. "
+        if not line.startswith(expected_prefix):
+            return False
+    return True
+
+def block_to_block_type(block):
+    if block.startswith("#"):
+        count = 0
+        for char in block:
+            if char == "#":
+                count += 1
+            else:
+                break
+        if 1 <= count <= 6 and block[count:count+1] == " ": 
+            return BlockType.HEADING
+        else:
+            return BlockType.PARAGRAPH
+    elif block.startswith("```") and block.endswith("```"):
+        return BlockType.CODE
+    elif all(line.startswith("> ") for line in block.split("\n")):
+        return BlockType.QUOTE
+    elif all(line.startswith("- ") for line in block.split("\n")):
+        return BlockType.UNORDERED_LIST
+    elif is_ordered_list(block):
+        return BlockType.ORDERED_LIST
+    else:
+        return BlockType.PARAGRAPH
