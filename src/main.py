@@ -2,7 +2,7 @@ import os
 import shutil
 
 from textnode import TextNode, TextType
-
+from split_nodes import generate_page_recursive
 
 
 def copy_directory_contents(source_dir, dest_dir, is_initial_call = True):
@@ -20,9 +20,9 @@ def copy_directory_contents(source_dir, dest_dir, is_initial_call = True):
             copy_directory_contents(os.path.join(source_dir, item), os.path.join(dest_dir, item), False)
 
 def main():
-    textnode = TextNode("Here is some example text", TextType.BOLD)
-    print(textnode)
     copy_directory_contents("./static", "./public")
+    generate_page_recursive("content", "template.html", "public")
+
 
 if __name__ == "__main__":
     main()

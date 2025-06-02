@@ -3,7 +3,7 @@ from textnode import TextNode, TextType
 from split_nodes import (
     split_nodes_delimiter, extract_markdown_images, extract_markdown_links, 
     split_nodes_image, split_nodes_link, text_to_textnodes, markdown_to_blocks,
-    block_to_block_type,markdown_to_html_node, BlockType
+    block_to_block_type,markdown_to_html_node, extract_title, BlockType
 )
 
 class TestSplitNodes(unittest.TestCase):
@@ -386,3 +386,27 @@ the **same** even with inline stuff
             "<div><pre><code>This is text that _should_ remain\nthe **same** even with inline stuff\n</code></pre></div>",
         )
         
+    def test_title(self):
+        md = "# Title"
+        title = extract_title(md)
+        self.assertEqual(title, "Title")
+    
+    def test_none_title(self):
+        md = "Title"
+        with self.assertRaises(Exception):
+            extract_title(md)
+
+    def test_empty_title(self):
+        md = ""
+        with self.assertRaises(Exception):
+            extract_title(md)
+
+    def test_h2_title(self):
+        md = "## H2 Title"
+        with self.assertRaises(Exception):
+            extract_title(md)
+    
+    def test_none_valid_title(self):
+        md = "#"
+        with self.assertRaises(Exception):
+            extract_title(md)
